@@ -15,16 +15,36 @@ const MoviesList = props => {
     const [searchRating, setSearchRating] = useState("")
     const [ratings, setRatings] = useState(["All Ratings"])
 
+    const [currentPage, setCurrentPage] = useState(0)
+    const [entriesPerPage, setEntriesPerPage] = useState(0)
+    const [currentSearchMode, setCurrentSearchMode] = useState("")
+
     useEffect(() => {
-        retrieveMovies()
+        setCurrentPage(0)
+    }, [currentSearchMode])
+
+    useEffect(() => {
+        retrieveNextPage()
         retrieveRatings()
-    }, [])
+    }, [currentPage])
+
+    const retrieveNextPage = () => {
+        if (currentSearchMode === "findByTitle")
+            findByTitle()
+        else if (currentSearchMode === "findByRating")
+            findByRating()
+        else
+            retrieveMovies()
+    }
 
     const retrieveMovies = () => {
-        MovieDataService.getAll()
+        setCurrentSearchMode("")
+        MovieDataService.getAll(currentPage)
             .then(response => {
-                console.log(response.data)
+                // console.log(response.data)
                 setMovies(response.data.movies)
+                setCurrentPage(response.data.page)
+                setEntriesPerPage(response.data.entries_per_page)
             })
             .catch(e => {
                 console.log(e)
@@ -34,7 +54,7 @@ const MoviesList = props => {
     const retrieveRatings = () => {
         MovieDataService.getRatings()
             .then(response => {
-                console.log(response.data)
+                // console.log(response.data)
                 //start with 'All ratings' if user doesn't specify any ratings
                 setRatings(["All Ratings"].concat(response.data))
             })
@@ -54,7 +74,7 @@ const MoviesList = props => {
     }
 
     const find = (query, by) => {
-        MovieDataService.find(query, by)
+        MovieDataService.find(query, by, currentPage)
             .then(response => {
                 console.log(response.data)
                 setMovies(response.data.movies)
@@ -65,10 +85,12 @@ const MoviesList = props => {
     }
 
     const findByTitle = () => {
+        setCurrentSearchMode("findByTitle")
         find(searchTitle, "title")
     }
-    
+
     const findByRating = () => {
+        setCurrentSearchMode("findByRating")
         if (searchRating === "All Ratings") {
             retrieveMovies()
         }
@@ -138,6 +160,15 @@ const MoviesList = props => {
                         )
                     })}
                 </Row>
+
+                <br />
+                Showing page: {currentPage}.
+                <Button
+                    variant="link"
+                    onClick={() => { setCurrentPage(currentPage + 1) }}
+                >
+                    Get next {entriesPerPage} results
+                </Button>
             </Container>
         </div>
     )
